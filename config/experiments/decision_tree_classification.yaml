@@ -1,0 +1,76 @@
+# データ設定
+data:
+  file: "data/wine.csv"
+  format: csv
+  target_col: 0
+  header: 0
+
+  # データ分割設定
+  split:
+    test_size: 0.2
+    random_state: 42
+    stratify: false
+
+  # ストレージ設定
+  storage_type: Local  # "Local", "GCS", "BigQuery"のいずれか
+  storage_config: {}   # ストレージ固有の設定
+
+
+preprocessing:
+  steps:
+    - name: missing_values
+      type: missing_value_handler
+      params:
+        strategy: mean
+        categorical_strategy: most_frequent
+
+    - name: outlier_removal
+      type: outlier_remover
+      params:
+        method: iqr
+        threshold: 1.5
+        treatment: clip
+
+    - name: scaling
+      type: standard_scaler
+      params:
+        with_mean: true
+        with_std: true
+
+    - name: labeling
+      type: label_encoder
+
+
+model:
+  type: "decision_tree_classifier"
+  params:
+    criterion: "entropy"
+    max_depth: 10
+    min_samples_split: 5
+
+tuning:
+  enabled: true
+  tuner_type: "grid_search"
+  scoring_metric: "f1_score"
+  params:
+    criterion: ["gini", "entropy"]
+    max_depth: [5, 10, 15, 20, null]
+    min_samples_split: [2, 5, 10]
+
+evaluation:
+  primary_metric: "f1_score"
+  metrics:
+    accuracy_score:
+      enabled: true
+    precision_score:
+      enabled: true
+      params:
+        average: "weighted"
+    recall_score:
+      enabled: true
+      params:
+        average: "weighted"
+    f1_score:
+      enabled: true
+      params:
+        average: "weighted"

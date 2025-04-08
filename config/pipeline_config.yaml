@@ -1,0 +1,54 @@
+# パイプライン設定 (pipeline_config.yaml)
+
+# 実験設定ファイルのパス
+experiment_config_path: "config/experiments/mlp_classification.yaml"
+
+# MLflow設定
+mlflow:
+  tracking_uri: "sqlite:///mlruns.db"
+  experiment_name: "logistic_regression_abalone"
+  tags:
+    version: "1.0"
+    environment: "development"
+
+# パイプラインコンポーネント
+pipeline:
+  components:
+    - name: "data_loader"
+      enabled: true
+
+    - name: "data_split"
+      enabled: true
+
+    - name: "preprocess"
+      enabled: true
+
+    - name: "tuning"
+      enabled: true
+
+    - name: "model_training"
+      enabled: true
+
+    - name: "evaluation"
+      enabled: true
+
+# 出力ディレクトリ設定
+output:
+  base_dir: "out/mlp_classification"
+  data:
+    raw: "out/data/raw/"
+    processed: "out/data/processed/"
+    split: "out/data/split/"
+  models:
+    saved: "out/models/saved/"
+    tuned: "out/models/tuned/"
+  tuning:
+    best_params: "out/tuning/best_params/"
+    history: "out/tuning/history/"
+  logs: "out/logs/"
+  results: "out/results/"
+
+# ログ設定
+logging:
+  level: "INFO"
+  save_dir: "out/logs"

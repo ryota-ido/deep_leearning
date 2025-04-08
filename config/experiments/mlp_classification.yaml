@@ -1,0 +1,115 @@
+# データ設定
+data:
+  file: "data/abalone.csv"
+  format: csv
+  target_col: 8
+  header: 0
+
+  # データ分割設定
+  split:
+    test_size: 0.2
+    random_state: 42
+    stratify: false
+
+  # ストレージ設定
+  storage_type: Local  # "Local", "GCS", "BigQuery"のいずれか
+  storage_config: {}   # ストレージ固有の設定
+
+
+preprocessing:
+  steps:
+    - name: missing_values
+      type: missing_value_handler
+      params:
+        strategy: mean
+        categorical_strategy: most_frequent
+
+    - name: outlier_removal
+      type: outlier_remover
+      params:
+        method: iqr
+        threshold: 1.5
+        treatment: clip
+
+    - name: scaling
+      type: standard_scaler
+      params:
+        with_mean: true
+        with_std: true
+
+    - name: labeling
+      type: label_encoder
+
+# Model settings
+model:
+  type: "mlp_classification"                   # Use MLP classifier
+  params:
+    hidden_layer_sizes: [100, 50]              # Network architecture (two hidden layers)
+    activation: "relu"                         # Activation function
+    solver: "adam"                             # Optimization algorithm
+    alpha: 0.0001                              # L2 penalty (regularization term)
+    batch_size: "auto"                         # Size of minibatches
+    learning_rate: "adaptive"                  # Learning rate schedule
+    learning_rate_init: 0.001                  # Initial learning rate
+    max_iter: 1000                             # Maximum number of iterations
+    shuffle: true                              # Shuffle training data
+    random_state: 42                           # Random seed
+    tol: 0.0001                                # Tolerance for optimization
+    early_stopping: true                       # Use early stopping
+    validation_fraction: 0.1                   # Fraction of training data for validation
+    beta_1: 0.9                                # Adam parameter
+    beta_2: 0.999                              # Adam parameter
+    n_iter_no_change: 10                       # Early stopping patience
+    verbose: true                              # Log training progress
+
+# Cross-validation settings
+cross_validation:
+  split_method: "stratifiedkfold"              # CV method
+  n_splits: 5                                  # Number of folds
+  shuffle: true                                # Shuffle before splitting
+  random_state: 42                             # Random seed
+  scoring_metric: "accuracy_score"             # Primary evaluation metric
+
+# Tuning settings
+tuning:
+  enabled: true
+  tuner_type: "optuna"
+  n_trials: 50
+  timeout: 1800                                # 30 minutes timeout
+  direction: "maximize"
+  scoring_metric: "accuracy_score"
+  params:
+    hidden_layer_sizes: ["suggest_categorical", [[
+      [50, 50],
+      [100, 50],
+      [100, 100],
+      [200, 100],
+      [100, 50, 25]
+    ]]]
+    activation: ["suggest_categorical", [["relu", "tanh"]]]
+    alpha: ["suggest_float", [0.0001, 0.01, {"log": true}]]
+    learning_rate_init: ["suggest_float", [0.0001, 0.1, {"log": true}]]
+
+# Evaluation settings
+evaluation:
+  primary_metric: "accuracy_score"
+  metrics:
+    accuracy_score:
+      enabled: true
+    precision_score:
+      enabled: true
+      params:
+        average: "weighted"
+    recall_score:
+      enabled: true
+      params:
+        average: "weighted"
+    f1_score:
+      enabled: true
+      params:
+        average: "weighted"
+    roc_auc_score:
+      enabled: true
+      params:
+        multi_class: "ovr"
+        average: "weighted"

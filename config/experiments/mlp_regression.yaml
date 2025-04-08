@@ -1,0 +1,96 @@
+# Configuration for MLP Regression model experiment
+
+# Data settings
+data:
+  file: "data/raw/regression_dataset.csv"  # Path to your dataset
+  target_col: "target"                     # Target column name
+  split:
+    test_size: 0.2                         # Test split ratio
+    random_state: 42                       # Random seed for reproducibility
+
+# Preprocessing settings
+preprocessing:
+  steps:
+    - name: missing_values
+      type: missing_value_handler
+      params:
+        strategy: "median"
+
+    - name: scaling
+      type: standard_scaler
+      params:
+        with_mean: true
+        with_std: true
+
+    - name: outlier_removal
+      type: outlier_remover
+      params:
+        method: "iqr"
+        threshold: 1.5
+        treatment: "clip"
+
+# Model settings
+model:
+  type: "mlp_regression"                   # Use MLP regressor
+  params:
+    hidden_layer_sizes: [100, 50]          # Network architecture (two hidden layers)
+    activation: "relu"                     # Activation function
+    solver: "adam"                         # Optimization algorithm
+    alpha: 0.0001                          # L2 penalty (regularization term)
+    batch_size: "auto"                     # Size of minibatches
+    learning_rate: "adaptive"              # Learning rate schedule
+    learning_rate_init: 0.001              # Initial learning rate
+    max_iter: 1000                         # Maximum number of iterations
+    shuffle: true                          # Shuffle training data
+    random_state: 42                       # Random seed
+    tol: 0.0001                            # Tolerance for optimization
+    early_stopping: true                   # Use early stopping
+    validation_fraction: 0.1               # Fraction of training data for validation
+    beta_1: 0.9                            # Adam parameter
+    beta_2: 0.999                          # Adam parameter
+    epsilon: 1e-8                          # Adam parameter
+    n_iter_no_change: 10                   # Early stopping patience
+    verbose: true                          # Log training progress
+
+# Cross-validation settings
+cross_validation:
+  split_method: "kfold"                    # CV method
+  n_splits: 5                              # Number of folds
+  shuffle: true                            # Shuffle before splitting
+  random_state: 42                         # Random seed
+  scoring_metric: "r2_score"               # Primary evaluation metric
+
+# Tuning settings
+tuning:
+  enabled: true
+  tuner_type: "optuna"
+  n_trials: 50
+  timeout: 1800                            # 30 minutes timeout
+  direction: "maximize"
+  scoring_metric: "r2_score"
+  params:
+    hidden_layer_sizes: ["suggest_categorical", [[
+      [50, 50],
+      [100, 50],
+      [100, 100],
+      [200, 100],
+      [100, 50, 25]
+    ]]]
+    activation: ["suggest_categorical", [["relu", "tanh"]]]
+    alpha: ["suggest_float", [0.0001, 0.01, {"log": true}]]
+    learning_rate_init: ["suggest_float", [0.0001, 0.1, {"log": true}]]
+
+# Evaluation settings
+evaluation:
+  primary_metric: "r2_score"
+  metrics:
+    mean_squared_error:
+      enabled: true
+    mean_absolute_error:
+      enabled: true
+    r2_score:
+      enabled: true
+    explained_variance_score:
+      enabled: true
+    median_absolute_error:
+      enabled: true

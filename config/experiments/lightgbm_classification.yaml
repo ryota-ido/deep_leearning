@@ -1,0 +1,83 @@
+# データ設定
+data:
+  file: "data/wine.csv"
+  format: csv
+  target_col: 0
+  header: 0
+
+  # データ分割設定
+  split:
+    test_size: 0.2
+    random_state: 42
+    stratify: false
+
+  # ストレージ設定
+  storage_type: Local  # "Local", "GCS", "BigQuery"のいずれか
+  storage_config: {}   # ストレージ固有の設定
+
+
+preprocessing:
+  steps:
+    - name: missing_values
+      type: missing_value_handler
+      params:
+        strategy: mean
+        categorical_strategy: most_frequent
+
+    - name: outlier_removal
+      type: outlier_remover
+      params:
+        method: iqr
+        threshold: 1.5
+        treatment: clip
+
+    - name: scaling
+      type: standard_scaler
+      params:
+        with_mean: true
+        with_std: true
+
+    - name: labeling
+      type: label_encoder
+
+model:
+  type: "lightgbm_classifier"
+  params:
+    n_estimators: 100
+    learning_rate: 0.05
+    max_depth: 5
+    objective: "multiclass"
+    num_leaves: 31
+    min_child_samples: 20
+
+tuning:
+  enabled: true
+  tuner_type: "optuna"
+  n_trials: 10
+  timeout: 600
+  direction: "maximize"
+  scoring_metric: "f1_score"
+  params:
+    n_estimators: ["suggest_int", [50, 300, 50]]
+    learning_rate: ["suggest_float", [0.01, 0.2, {"log": true}]]
+    max_depth: ["suggest_int", [3, 10, 1]]
+    num_leaves: ["suggest_int", [15, 63, 1]]
+    min_child_samples: ["suggest_int", [10, 50, 5]]
+
+evaluation:
+  primary_metric: "f1_score"
+  metrics:
+    accuracy_score:
+      enabled: true
+    precision_score:
+      enabled: true
+      params:
+        average: "weighted"
+    recall_score:
+      enabled: true
+      params:
+        average: "weighted"
+    f1_score:
+      enabled: true
+      params:
+        average: "weighted"
